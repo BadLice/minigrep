@@ -1,15 +1,16 @@
-use std::env::{args};
-
+use grep::{run, Config};
+use std::{env::args, process};
 
 fn main() {
     let args: Vec<String> = args().collect();
 
-        if args.len() != 2 {
-    eprintln!("Error: needed 2 args");
-    }
+    let config = Config::build(&args).unwrap_or_else(|err| {
+        println!("A problem with args occurred: {}", err);
+        process::exit(1);
+    });
 
-    let path = &args[1];
-    let query = &args[2];
-    println!("path: {:?}", path);
-    println!("path: {:?}", query);
+    run(config).unwrap_or_else(|err| {
+        println!("A problem occurred: {}", err);
+        process::exit(1);
+    });
 }
