@@ -1,37 +1,47 @@
 use std::{error::Error, fs};
 
 pub fn run(config: Config) -> Result<Config, Box<dyn Error>> {
-    let mut lines: Vec<String> = Vec::new();
-    let mut matches: Vec<(String, String, String)> = Vec::new();
-    read_file(&config, &mut lines)?;
-    search(&config, &lines, &mut matches);
+    let contents: String = read_file(&config)?;
+    let matches = search_case_sensitive(&config, &contents);
     print_matches(&matches);
     Ok(config)
 }
 
-fn read_file(config: &Config, lines: &mut Vec<String>) -> Result<(), Box<dyn Error>> {
-    let contents: String = fs::read_to_string(&config.file_path)?;
-    *lines = contents
-        .split('\n')
-        .map(|s| s.to_string())
-        .collect::<Vec<String>>();
-    Ok(())
+fn read_file(config: &Config) -> Result<String, Box<dyn Error>> {
+    let contents = fs::read_to_string(&config.file_path)?;
+    Ok(contents)
 }
 
-fn search(config: &Config, lines: &Vec<String>, matches: &mut Vec<(String, String, String)>) {
-    for line in lines {
+type Match<'a> = Vec<(&'a str, &'a str, &'a str)>;
+fn search_case_sensitive<'a>(config: &Config, contents: &'a str) -> Match<'a> {
+    let mut matches: Match<'a> = Vec::new();
+    for line in contents.lines() {
         let indexes = line.match_indices(&config.query);
 
         for (i, found) in indexes {
             let prev = &line[..i];
-
             let next = &line[i + found.len()..];
-            matches.push((prev.to_string(), found.to_string(), next.to_string()));
+            matches.push((prev, found, next));
         }
     }
+    matches
 }
 
-fn print_matches(matches: &Vec<(String, String, String)>) {
+fn search_case_insensitive<'a>(config: &Config, contents: &'a str) -> Match<'a> {
+    let mut matches: Match<'a> = Vec::new();
+    let query = config.query.to_lowercase();
+    for line in contents.lines() {
+        let indexes = line.to_lowercase().match_indices(&query);
+        for (i, found) in indexes {
+            let prev = &line[..i];
+            let next = &line[i + found.len()..];
+            matches.push((prev, found, next));
+        }
+    }
+    matches
+}
+
+fn print_matches(matches: &Match) {
     for (prev, found, next) in matches {
         print!("{}", prev);
         print!("\x1b[31m{}\x1b[0m", found);
