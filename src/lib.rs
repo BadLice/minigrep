@@ -1,8 +1,12 @@
-use std::{error::Error, fs};
+use std::{env, error::Error, fs};
 
 pub fn run(config: Config) -> Result<Config, Box<dyn Error>> {
     let contents: String = read_file(&config)?;
-    let matches = search_case_sensitive(&config, &contents);
+    let matches = if config.ignore_case {
+        search_case_insensitive(&config, &contents)
+    } else {
+        search_case_sensitive(&config, &contents)
+    };
     print_matches(&matches);
     Ok(config)
 }
@@ -17,7 +21,6 @@ fn search_case_sensitive<'a>(config: &Config, contents: &'a str) -> Match<'a> {
     let mut matches: Match<'a> = Vec::new();
     for line in contents.lines() {
         let indexes = line.match_indices(&config.query);
-
         for (i, found) in indexes {
             let prev = &line[..i];
             let next = &line[i + found.len()..];
@@ -49,10 +52,11 @@ fn print_matches(matches: &Match) {
         println!("{}", next);
     }
 }
-
+#[derive(Debug)]
 pub struct Config {
     file_path: String,
     query: String,
+    ignore_case: bool,
 }
 
 impl Config {
@@ -63,6 +67,11 @@ impl Config {
         }
         let query = args[1].clone();
         let file_path = args[2].clone();
-        Ok(Config { file_path, query })
+        let ignore_case = env::var("IGNORE_CASE").is_ok();
+        Ok(Config {
+            file_path,
+            query,
+            ignore_case,
+        })
     }
 }
