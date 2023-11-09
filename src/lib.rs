@@ -60,13 +60,17 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn build(args: &[String]) -> Result<Config, &str> {
-        // 3 args in total: default exec path + 2 user arguments
-        if args.len() != 3 {
-            return Err("2 arguments needed");
-        }
-        let query = args[1].clone();
-        let file_path = args[2].clone();
+    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+        // skip first arg as it is the exec path in every program by default
+        args.next();
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Query string not defined"),
+        };
+        let file_path = match args.next() {
+            Some(arg) => arg,
+            None => return Err("File path not defined"),
+        };
         let ignore_case = env::var("IGNORE_CASE").is_ok();
         Ok(Config {
             file_path,
