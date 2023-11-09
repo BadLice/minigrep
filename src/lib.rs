@@ -12,7 +12,7 @@ fn read_file(config: &Config) -> Result<String, Box<dyn Error>> {
     Ok(contents)
 }
 
-type Match<'a> = Vec<(&'a str, &'a str, &'a str)>;
+type Match<'a> = Vec<(&'a str, String, &'a str)>;
 fn search_case_sensitive<'a>(config: &Config, contents: &'a str) -> Match<'a> {
     let mut matches: Match<'a> = Vec::new();
     for line in contents.lines() {
@@ -21,7 +21,7 @@ fn search_case_sensitive<'a>(config: &Config, contents: &'a str) -> Match<'a> {
         for (i, found) in indexes {
             let prev = &line[..i];
             let next = &line[i + found.len()..];
-            matches.push((prev, found, next));
+            matches.push((prev, found.to_owned(), next));
         }
     }
     matches
@@ -31,11 +31,12 @@ fn search_case_insensitive<'a>(config: &Config, contents: &'a str) -> Match<'a> 
     let mut matches: Match<'a> = Vec::new();
     let query = config.query.to_lowercase();
     for line in contents.lines() {
-        let indexes = line.to_lowercase().match_indices(&query);
+        let line_lowercased = line.to_lowercase();
+        let indexes = line_lowercased.match_indices(&query);
         for (i, found) in indexes {
             let prev = &line[..i];
             let next = &line[i + found.len()..];
-            matches.push((prev, found, next));
+            matches.push((prev, found.to_owned(), next));
         }
     }
     matches
